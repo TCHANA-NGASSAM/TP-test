@@ -14,10 +14,11 @@ export function simplifyDebts(balances: Balances): Settlement[] {
   const debtors = new Map<string, number>();
 
   for (const [memberId, balance] of Object.entries(balances)) {
-    if (balance > 0) {
-      creditors.set(memberId, balance);
-    } else if (balance < 0) {
-      debtors.set(memberId, Math.abs(balance));
+    const cents = Math.round(balance * 100);
+    if (cents > 0) {
+      creditors.set(memberId, cents);
+    } else if (cents < 0) {
+      debtors.set(memberId, Math.abs(cents));
     }
   }
 
@@ -31,7 +32,7 @@ export function simplifyDebts(balances: Balances): Settlement[] {
     settlements.push({
       from: debtorEntry[0],
       to: creditorEntry[0],
-      amount: settledAmount,
+      amount: settledAmount / 100,
     });
 
     const creditorRemaining = creditorEntry[1] - settledAmount;
