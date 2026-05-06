@@ -24,4 +24,17 @@ describe('simplifyDebts', () => {
     ]);
     expect(result).toHaveLength(2);
   });
+
+  it('gere les montants decimaux en conservant une somme nulle', () => {
+    const result = simplifyDebts({ a: 66.67, b: -33.33, c: -33.34 });
+
+    expect(result).toEqual([
+      { from: 'c', to: 'a', amount: 33.34 },
+      { from: 'b', to: 'a', amount: 33.33 },
+    ]);
+  });
+
+  it('retourne une liste vide quand tout est deja solde', () => {
+    expect(simplifyDebts({ a: 0, b: 0 })).toEqual([]);
+  });
 });
