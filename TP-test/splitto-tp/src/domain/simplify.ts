@@ -10,18 +10,45 @@
 import type { Balances, Settlement } from './types';
 
 export function simplifyDebts(balances: Balances): Settlement[] {
-  const creditor = Object.entries(balances).find(([, balance]) => balance > 0);
-  const debtor = Object.entries(balances).find(([, balance]) => balance < 0);
+  const creditors = new Map<string, number>();
+  const debtors = new Map<string, number>();
 
-  if (!creditor || !debtor) {
-    return [];
+  for (const [memberId, balance] of Object.entries(balances)) {
+    if (balance > 0) {
+      creditors.set(memberId, balance);
+    } else if (balance < 0) {
+      debtors.set(memberId, Math.abs(balance));
+    }
   }
 
-  return [
-    {
-      from: debtor[0],
-      to: creditor[0],
-      amount: Math.min(creditor[1], Math.abs(debtor[1])),
-    },
-  ];
+  const settlements: Settlement[] = [];
+
+  while (creditors.size > 0 && debtors.size > 0) {
+    const creditorEntry = [...creditors.entries()].sort((a, b) => b[1] - a[1])[0];
+    const debtorEntry = [...debtors.entries()].sort((a, b) => b[1] - a[1])[0];
+    const settledAmount = Math.min(creditorEntry[1], debtorEntry[1]);
+
+    settlements.push({
+      from: debtorEntry[0],
+      to: creditorEntry[0],
+      amount: settledAmount,
+    });
+
+    const creditorRemaining = creditorEntry[1] - settledAmount;
+    const debtorRemaining = debtorEntry[1] - settledAmount;
+
+    if (creditorRemaining === 0) {
+      creditors.delete(creditorEntry[0]);
+    } else {
+      creditors.set(creditorEntry[0], creditorRemaining);
+    }
+
+    if (debtorRemaining === 0) {
+      debtors.delete(debtorEntry[0]);
+    } else {
+      debtors.set(debtorEntry[0], debtorRemaining);
+    }
+  }
+
+  return settlements;
 }
