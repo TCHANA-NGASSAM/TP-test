@@ -24,8 +24,8 @@ export function simplifyDebts(balances: Balances): Settlement[] {
   const settlements: Settlement[] = [];
 
   while (creditors.size > 0 && debtors.size > 0) {
-    const creditorEntry = [...creditors.entries()].sort((a, b) => b[1] - a[1])[0];
-    const debtorEntry = [...debtors.entries()].sort((a, b) => b[1] - a[1])[0];
+    const creditorEntry = findLargestEntry(creditors);
+    const debtorEntry = findLargestEntry(debtors);
     const settledAmount = Math.min(creditorEntry[1], debtorEntry[1]);
 
     settlements.push({
@@ -51,4 +51,8 @@ export function simplifyDebts(balances: Balances): Settlement[] {
   }
 
   return settlements;
+}
+
+function findLargestEntry(pool: Map<string, number>): [string, number] {
+  return [...pool.entries()].sort((a, b) => b[1] - a[1])[0];
 }
