@@ -196,4 +196,112 @@ describe('computeBalances', () => {
       [chloe.id]: 0,
     });
   });
+
+  it('retourne une balance uniquement positive pour une depense sans beneficiaires', () => {
+    const group = createGroup([alice, bob]);
+    const expenses = [
+      createExpense({
+        amount: 12.34,
+        paidBy: alice.id,
+        split: { mode: 'equal', beneficiaries: [] },
+      }),
+    ];
+
+    const result = computeBalances(group, expenses);
+
+    expect(result).toEqual({
+      [alice.id]: 12.34,
+      [bob.id]: 0,
+    });
+  });
+
+  it('ignore une depense egale de montant zero', () => {
+    const group = createGroup([alice, bob, chloe]);
+    const expenses = [
+      createExpense({
+        amount: 0,
+        paidBy: alice.id,
+        split: { mode: 'equal', beneficiaries: [alice.id, bob.id, chloe.id] },
+      }),
+    ];
+
+    const result = computeBalances(group, expenses);
+
+    expect(result).toEqual({
+      [alice.id]: 0,
+      [bob.id]: 0,
+      [chloe.id]: 0,
+    });
+  });
+
+  it('ignore une depense weighted quand la somme des poids est nulle', () => {
+    const group = createGroup([alice, bob, chloe]);
+    const expenses = [
+      createExpense({
+        amount: 90,
+        paidBy: alice.id,
+        split: {
+          mode: 'weighted',
+          weights: {
+            [alice.id]: 0,
+            [bob.id]: 0,
+            [chloe.id]: 0,
+          },
+        },
+      }),
+    ];
+
+    const result = computeBalances(group, expenses);
+
+    expect(result).toEqual({
+      [alice.id]: 90,
+      [bob.id]: 0,
+      [chloe.id]: 0,
+    });
+  });
+
+  it('repartit le reliquat vers les fractions les plus hautes', () => {
+    const group = createGroup([alice, bob, chloe]);
+    const expenses = [
+      createExpense({
+        amount: 0.05,
+        paidBy: alice.id,
+        split: { mode: 'percentage', percentages: { [alice.id]: 33.34, [bob.id]: 33.33, [chloe.id]: 33.33 } },
+      }),
+    ];
+
+    const result = computeBalances(group, expenses);
+
+    expect(result).toEqual({
+      [alice.id]: 0.03,
+      [bob.id]: -0.02,
+      [chloe.id]: -0.01,
+    });
+  });
+
+  it('attribue un reliquat unique au beneficiaire avec la plus grande fraction', () => {
+    const group = createGroup([alice, bob, chloe]);
+    const expenses = [
+      createExpense({
+        amount: 0.04,
+        paidBy: alice.id,
+        split: {
+          mode: 'percentage',
+          percentages: {
+            [alice.id]: 33,
+            [bob.id]: 34,
+            [chloe.id]: 33,
+          },
+        },
+      }),
+    ];
+
+    const result = computeBalances(group, expenses);
+
+    expect(result).toEqual({
+      [alice.id]: 0.03,
+      [bob.id]: -0.02,
+      [chloe.id]: -0.01,
+    });
+  });
 });
